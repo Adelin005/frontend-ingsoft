@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-uni-dark: #001f3f;
+  --color-uni-blue: #1e3a8a;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #f3f4f6;
+  background-image: radial-gradient(#4b5563 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  font-family: sans-serif;
+}
