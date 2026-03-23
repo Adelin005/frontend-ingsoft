@@ -85,23 +85,7 @@ function AuthPage() {
           </div>
         </div>
       </div>
-      <footer className="w-full max-w-6xl mt-8 px-6 flex flex-col md:flex-row justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-[0.15em]">
-        <p>© 2026 Portal Universitar. Toate drepturile rezervate.</p>
-        <div className="flex gap-6 mt-4 md:mt-0 font-bold">
-          <a href="#" className="hover:text-blue-900 transition-colors">
-            Confidențialitate
-          </a>
-          <a href="#" className="hover:text-blue-900 transition-colors">
-            Termeni
-          </a>
-          <a href="#" className="hover:text-blue-900 transition-colors">
-            Harta Campus
-          </a>
-          <a href="#" className="hover:text-blue-900 transition-colors">
-            Ajutor
-          </a>
-        </div>
-      </footer>
+
     </div>
   );
 }
