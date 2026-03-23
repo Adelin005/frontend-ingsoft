@@ -1,15 +1,19 @@
-import React from "react";
+import React, { useState } from "react"; // Adăugat useState
 import {
   Bell,
   Settings,
   Download,
   GraduationCap,
   TrendingUp,
+  LogOut, // Adăugat LogOut
+  LayoutDashboard, // Adăugat pentru consistență cu meniul
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 
 const CatalogPage = () => {
   const navigate = useNavigate();
+  // Stare pentru controlul meniului dropdown
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const s1 = [
     { c: "CS-101", n: "Introducere în Programare", cr: 6, g: 10 },
@@ -30,13 +34,15 @@ const CatalogPage = () => {
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#001f3f] font-sans pb-20">
-      {/* NAVBAR CORECTAT */}
+      {/* NAVBAR ACTUALIZAT */}
       <nav className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-8">
-          <span className="text-xl font-bold tracking-tighter">
+          <span
+            className="text-xl font-bold tracking-tighter cursor-pointer"
+            onClick={() => navigate("/home")}
+          >
             Portal Universitar
           </span>
-          {/* ÎNLOCUIEȘTE TOT ACEST DIV ÎN INTERIORUL <nav> */}
           <div className="hidden md:flex gap-6 text-[10px] font-black uppercase tracking-widest items-center">
             <NavLink
               to="/home"
@@ -48,7 +54,6 @@ const CatalogPage = () => {
             >
               Acasă
             </NavLink>
-
             <NavLink
               to="/catalog"
               className={({ isActive }) =>
@@ -59,7 +64,6 @@ const CatalogPage = () => {
             >
               Catalog
             </NavLink>
-
             <NavLink
               to="/services"
               className={({ isActive }) =>
@@ -70,7 +74,6 @@ const CatalogPage = () => {
             >
               Servicii
             </NavLink>
-
             <NavLink
               to="/settings"
               className={({ isActive }) =>
@@ -84,19 +87,61 @@ const CatalogPage = () => {
           </div>
         </div>
 
-        {/* ZONA DIN DREAPTA CU ICONIȚE */}
         <div className="flex items-center gap-5">
           <Bell
             size={18}
             className="text-gray-400 cursor-pointer hover:text-blue-900 transition-colors"
           />
-          <Settings
-            size={18}
-            className="text-gray-400 cursor-pointer hover:text-blue-900 transition-colors"
-            onClick={() => navigate("/settings")}
-          />
-          <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-200">
-            <img src="https://i.pravatar.cc/150?u=student" alt="profil" />
+
+          {/* CONTAINER PROFIL CU DROPDOWN */}
+          <div className="relative">
+            <div
+              className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 cursor-pointer hover:ring-2 hover:ring-blue-900 transition-all shadow-sm"
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+            >
+              <img src="https://i.pravatar.cc/150?u=student" alt="profil" />
+            </div>
+
+            {isProfileOpen && (
+              <>
+                {/* Overlay invizibil pentru închidere la click în exterior */}
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setIsProfileOpen(false)}
+                ></div>
+
+                <div className="absolute right-0 mt-3 w-52 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-20 overflow-hidden animate-in fade-in zoom-in duration-200">
+                  <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
+                    <p className="text-[9px] font-black uppercase text-blue-600 tracking-widest">
+                      Cont Student
+                    </p>
+                    <p className="text-sm font-bold text-[#001f3f] truncate">
+                      Ion Popescu
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      navigate("/settings");
+                      setIsProfileOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-blue-50 transition-colors"
+                  >
+                    <Settings size={16} /> Setări Profil
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsProfileOpen(false);
+                      navigate("/");
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors border-t border-gray-50 mt-1"
+                  >
+                    <LogOut size={16} /> Deconectare
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -176,7 +221,7 @@ const CatalogPage = () => {
               PDF.
             </p>
           </div>
-          <button className="bg-[#001f3f] text-white px-10 py-5 rounded-2xl font-bold text-sm flex items-center gap-3 shadow-xl">
+          <button className="bg-[#001f3f] text-white px-10 py-5 rounded-2xl font-bold text-sm flex items-center gap-3 shadow-xl hover:bg-blue-900 transition-all">
             <Download size={20} /> Descarcă PDF
           </button>
         </div>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react"; // Adăugat useState
 import {
   Search,
   Bell,
@@ -9,10 +9,15 @@ import {
   GraduationCap,
   Star,
   Clock,
+  LogOut, // Adăugat LogOut pentru dropdown
 } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 const HomePage = () => {
+  const navigate = useNavigate();
+  // Stare pentru controlul meniului dropdown
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#001f3f] font-sans">
       <nav className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between sticky top-0 z-50">
@@ -20,7 +25,6 @@ const HomePage = () => {
           <span className="text-xl font-bold tracking-tighter text-[#001f3f]">
             Portal Universitar
           </span>
-          {/* ÎNLOCUIEȘTE TOT ACEST DIV ÎN INTERIORUL <nav> */}
           <div className="hidden md:flex gap-6 text-[10px] font-black uppercase tracking-widest items-center">
             <NavLink
               to="/home"
@@ -67,6 +71,7 @@ const HomePage = () => {
             </NavLink>
           </div>
         </div>
+
         <div className="flex items-center gap-5">
           <div className="relative hidden sm:block">
             <Search
@@ -79,10 +84,60 @@ const HomePage = () => {
               className="bg-gray-100 border-none rounded-lg py-2 pl-9 pr-4 text-xs w-64 focus:ring-1 focus:ring-blue-900 outline-none"
             />
           </div>
-          <Bell size={18} className="text-gray-400 cursor-pointer" />
-          <Settings size={18} className="text-gray-400 cursor-pointer" />
-          <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-200">
-            <img src="https://i.pravatar.cc/150?u=student" alt="profile" />
+
+          <Bell
+            size={18}
+            className="text-gray-400 cursor-pointer hover:text-blue-900 transition-colors"
+          />
+
+          {/* DROP DOWN PROFIL */}
+          <div className="relative">
+            <div
+              className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 cursor-pointer hover:ring-2 hover:ring-blue-900 transition-all shadow-sm"
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+            >
+              <img src="https://i.pravatar.cc/150?u=student" alt="profil" />
+            </div>
+
+            {isProfileOpen && (
+              <>
+                {/* Overlay pentru a închide dropdown-ul la click în afară */}
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setIsProfileOpen(false)}
+                ></div>
+
+                <div className="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-20 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
+                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+                      Student
+                    </p>
+                    <p className="text-sm font-bold text-[#001f3f] truncate">
+                      Ion Popescu
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      navigate("/settings");
+                      setIsProfileOpen(false);
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-900 transition-colors"
+                  >
+                    <Settings size={16} /> Setări Cont
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      /* Logout logic */ navigate("/");
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors border-t border-gray-50"
+                  >
+                    <LogOut size={16} /> Deconectare
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -312,4 +367,5 @@ const HomePage = () => {
     </div>
   );
 };
+
 export default HomePage;

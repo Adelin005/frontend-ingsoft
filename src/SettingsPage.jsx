@@ -8,7 +8,8 @@ import {
   CheckCircle,
   AlertCircle,
   Bell,
-  Settings as SettingsIcon, // Redenumit pentru a evita conflictul cu numele componentei
+  Settings,
+  LogOut, // Redenumit pentru a evita conflictul cu numele componentei
 } from "lucide-react";
 import { NavLink, useNavigate } from "react-router-dom";
 
@@ -17,6 +18,7 @@ const SettingsPage = () => {
   const [showPass, setShowPass] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [strengthText, setStrengthText] = useState("");
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   const handlePasswordInput = (e) => {
     const password = e.target.value;
@@ -51,40 +53,37 @@ const SettingsPage = () => {
               to="/home"
               className={({ isActive }) =>
                 isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1 transition-all"
+                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1"
                   : "text-gray-400 hover:text-[#001f3f] transition-colors"
               }
             >
               Acasă
             </NavLink>
-
             <NavLink
               to="/catalog"
               className={({ isActive }) =>
                 isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1 transition-all"
+                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1"
                   : "text-gray-400 hover:text-[#001f3f] transition-colors"
               }
             >
               Catalog
             </NavLink>
-
             <NavLink
               to="/services"
               className={({ isActive }) =>
                 isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1 transition-all"
+                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1"
                   : "text-gray-400 hover:text-[#001f3f] transition-colors"
               }
             >
               Servicii
             </NavLink>
-
             <NavLink
               to="/settings"
               className={({ isActive }) =>
                 isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1 transition-all"
+                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1"
                   : "text-gray-400 hover:text-[#001f3f] transition-colors"
               }
             >
@@ -93,19 +92,49 @@ const SettingsPage = () => {
           </div>
         </div>
 
-        {/* ZONA DREAPTA NAVBAR - NOTIFICĂRI ȘI SETĂRI */}
         <div className="flex items-center gap-5">
           <Bell
             size={18}
             className="text-gray-400 cursor-pointer hover:text-blue-900 transition-colors"
           />
-          <SettingsIcon
-            size={18}
-            className="text-[#001f3f] cursor-pointer hover:text-blue-900 transition-colors"
-            onClick={() => navigate("/settings")}
-          />
-          <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 shadow-sm">
-            <img src="https://i.pravatar.cc/150?u=student" alt="p" />
+          <div className="relative">
+            <div
+              className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 cursor-pointer hover:ring-2 hover:ring-blue-900 transition-all shadow-sm"
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+            >
+              <img src="https://i.pravatar.cc/150?u=student" alt="profil" />
+            </div>
+
+            {isProfileOpen && (
+              <>
+                {/* Overlay pentru a închide dropdown-ul la click în afară */}
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setIsProfileOpen(false)}
+                ></div>
+
+                <div className="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-20 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
+                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
+                      Student
+                    </p>
+                    <p className="text-sm font-bold text-[#001f3f] truncate">
+                      Ion Popescu
+                    </p>
+                  </div>
+
+
+                  <button
+                    onClick={() => {
+                      /* Logout logic */ navigate("/");
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors border-t border-gray-50"
+                  >
+                    <LogOut size={16} /> Deconectare
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </nav>
