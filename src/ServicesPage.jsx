@@ -1,4 +1,6 @@
-import React, { useState}from "react";
+import React, { useState, useEffect}from "react";
+import { db, auth } from "./firebase";
+import { collection, addDoc, serverTimestamp, doc, getDoc } from "firebase/firestore";
 import {
   Mail,
   Phone,
@@ -7,122 +9,78 @@ import {
   Settings,
   Clock,
   Send,
-  ChevronRight,
-  LogOut, 
+  ChevronRight, 
+  LogOut
 } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
-
+import Layout from "./Layout";
+import { useAlert } from "./components/useAlert";
 const ServicesPage = () => {
-  const navigate = useNavigate();
-const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const { showAlert } = useAlert();
+  const [studentInfo, setStudentInfo] = useState({ nume: "", prenume: "", cnp: "", email: "" });
+  const [formData, setFormData] = useState({
+    categorie: "Secretariat General",
+    subiect: "",
+    mesaj: "",
+  });
+  useEffect(() => {
+    const fetchStudentData = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const docRef = doc(db, "student", user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setStudentInfo({
+            nume: docSnap.data().Nume,
+            prenume: docSnap.data().Prenume,
+            email: user.email
+          });
+        }
+      }
+    };
+    fetchStudentData();
+  }, []);
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    // 1. Verificăm dacă există un utilizator logat (opțional, dacă vrei să legi mesajul de un cont)
+    const user = auth.currentUser;
+
+    // 2. Referință către colecția unde vrei să salvezi
+    const messagesRef = collection(db, "messages");
+
+    // 3. Adăugăm documentul
+    await addDoc(messagesRef, {
+      studentId: user.uid, // UID-ul studentului dacă e logat
+      nume: studentInfo.nume,
+      prenume: studentInfo.prenume,
+      email: studentInfo.email,
+      subiect: formData.subiect,
+      mesaj: formData.mesaj,
+      dataTrimitere: serverTimestamp(), // Salvează ora exactă a serverului
+      status: "nou" // Utilitate pentru un viitor panou de admin (citit/necitit)
+    });
+
+    showAlert("Mesajul a fost trimis și salvat cu succes!");
+    setFormData({
+        categorie: "Secretariat General",
+        subiect: "",
+        mesaj: "",
+      });
+  } catch (error) {
+    console.error("Eroare la salvarea mesajului:", error);
+    showAlert("A apărut o eroare. Încearcă din nou.", "error");
+  }
+  
+};
+  
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#001f3f] font-sans pb-20">
       {/* NAVBAR */}
-      <nav className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-8">
-          <span className="text-xl font-bold tracking-tighter text-[#001f3f]">
-            Portal Universitar
-          </span>
-          <div className="hidden md:flex gap-6 text-[10px] font-black uppercase tracking-widest items-center">
-            <NavLink
-              to="/home"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1"
-                  : "text-gray-400 hover:text-[#001f3f] transition-colors"
-              }
-            >
-              Acasă
-            </NavLink>
-            <NavLink
-              to="/catalog"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1"
-                  : "text-gray-400 hover:text-[#001f3f] transition-colors"
-              }
-            >
-              Catalog
-            </NavLink>
-            <NavLink
-              to="/services"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1"
-                  : "text-gray-400 hover:text-[#001f3f] transition-colors"
-              }
-            >
-              Servicii
-            </NavLink>
-            <NavLink
-              to="/settings"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1"
-                  : "text-gray-400 hover:text-[#001f3f] transition-colors"
-              }
-            >
-              Setări
-            </NavLink>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-5">
-          <Bell
-            size={18}
-            className="text-gray-400 cursor-pointer hover:text-blue-900 transition-colors"
-          />
-           <div className="relative">
-                      <div
-                        className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 cursor-pointer hover:ring-2 hover:ring-blue-900 transition-all shadow-sm"
-                        onClick={() => setIsProfileOpen(!isProfileOpen)}
-                      >
-                        <img src="https://i.pravatar.cc/150?u=student" alt="profil" />
-                      </div>
-          
-                      {isProfileOpen && (
-                        <>
-                          {/* Overlay pentru a închide dropdown-ul la click în afară */}
-                          <div
-                            className="fixed inset-0 z-10"
-                            onClick={() => setIsProfileOpen(false)}
-                          ></div>
-          
-                          <div className="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-20 overflow-hidden">
-                            <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
-                              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
-                                Student
-                              </p>
-                              <p className="text-sm font-bold text-[#001f3f] truncate">
-                                Ion Popescu
-                              </p>
-                            </div>
-          
-                            <button
-                              onClick={() => {
-                                navigate("/settings");
-                                setIsProfileOpen(false);
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-900 transition-colors"
-                            >
-                              <Settings size={16} /> Setări Cont
-                            </button>
-          
-                            <button
-                              onClick={() => {
-                                /* Logout logic */ navigate("/");
-                              }}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors border-t border-gray-50"
-                            >
-                              <LogOut size={16} /> Deconectare
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-        </div>
-      </nav>
-
+      
       <main className="max-w-7xl mx-auto px-8 py-12">
         {/* HEADER PAGINĂ */}
         <header className="mb-12">
@@ -191,46 +149,20 @@ const [isProfileOpen, setIsProfileOpen] = useState(false);
                 Trimite un Mesaj
               </h2>
 
-              <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
-                      Nume Complet
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="ex. Ion Popescu"
-                      className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-900 transition-all outline-none"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
-                      Nr. Matricol
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="ex. UOR-123456"
-                      className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-900 transition-all outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
-                      Email Student
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="nume@student.uoradea.ro"
-                      className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-900 transition-all outline-none"
-                    />
-                  </div>
+              <form className="space-y-6" onSubmit={handleSubmit}>
+              
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">                 
                   <div className="space-y-2 relative">
                     <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1">
                       Categorie
                     </label>
-                    <select className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-900 transition-all appearance-none outline-none font-medium text-[#001f3f]">
+                    <select className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-900 transition-all appearance-none outline-none font-medium text-[#001f3f]"
+                    name="categorie"
+                    value={formData.categorie}
+                    onChange={handleChange}
+                    required
+                    >
+
                       <option>Secretariat General</option>
                       <option>Burse și Cazare</option>
                       <option>Mobilități Erasmus</option>
@@ -251,6 +183,10 @@ const [isProfileOpen, setIsProfileOpen] = useState(false);
                     type="text"
                     placeholder="Subiectul solicitării tale"
                     className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-900 transition-all outline-none"
+                    name="subiect"
+                    value={formData.subiect}
+                    onChange={handleChange}
+                    required
                   />
                 </div>
 
@@ -262,6 +198,10 @@ const [isProfileOpen, setIsProfileOpen] = useState(false);
                     rows="5"
                     placeholder="Descrie problema ta în detaliu..."
                     className="w-full bg-gray-50 border-none rounded-2xl p-4 text-sm focus:ring-2 focus:ring-blue-900 transition-all resize-none outline-none"
+                    name="mesaj"
+                    value={formData.mesaj}
+                    onChange={handleChange}
+                    required
                   ></textarea>
                 </div>
 

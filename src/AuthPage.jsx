@@ -1,13 +1,31 @@
+import { useState } from "react";
+import { auth } from "./firebase"; 
+import { signInWithEmailAndPassword } from "firebase/auth";
 import React from "react";
 import { User, Lock, GraduationCap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
+import { useAlert } from "./components/useAlert"; // Importăm contextul de alerte
+import Layout from "./Layout";
 function AuthPage() {
+  const { showAlert } = useAlert();
   const navigate = useNavigate();
-  const handleSubmit = (e) => {
-    e.preventDefault();
+ const [cnp, setCnp] = useState(""); 
+const [password, setPassword] = useState("");
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  
+  const fakeEmail = `${cnp}@student.uoradea.ro`;
+
+  try {
+    await signInWithEmailAndPassword(auth, fakeEmail, password);
     navigate("/home");
-  };
+  } catch (error) {
+    showAlert("CNP sau Parolă incorectă!", "error" );
+    console.error(error.message);
+  }
+};
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-10 bg-[#f3f4f6]">
@@ -54,6 +72,8 @@ function AuthPage() {
                     required
                     type="text"
                     placeholder="1234567890123"
+                    value={cnp}
+                    onChange={(e) => setCnp(e.target.value)}
                     className="w-full bg-gray-100 border-none rounded-xl p-4 pl-12 text-sm focus:ring-2 focus:ring-blue-900 outline-none transition-all"
                   />
                 </div>
@@ -71,6 +91,8 @@ function AuthPage() {
                     required
                     type="password"
                     placeholder="••••••••••••"
+                    value ={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     className="w-full bg-gray-100 border-none rounded-xl p-4 pl-12 text-sm focus:ring-2 focus:ring-blue-900 outline-none transition-all"
                   />
                 </div>

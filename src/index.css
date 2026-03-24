@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme {
+:root {
   --color-uni-dark: #001f3f;
   --color-uni-blue: #1e3a8a;
 }
@@ -12,4 +12,14 @@ body {
   background-image: radial-gradient(#4b5563 0.5px, transparent 0.5px);
   background-size: 24px 24px;
   font-family: sans-serif;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.animate-shake {
+  animation: shake 0.2s ease-in-out 0s 2;
+  border: 1px solid #ef4444 !important;
 }

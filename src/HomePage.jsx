@@ -1,4 +1,5 @@
-import React, { useState } from "react"; // Adăugat useState
+import React from "react";
+import Layout from "./Layout";
 import {
   Search,
   Bell,
@@ -9,138 +10,15 @@ import {
   GraduationCap,
   Star,
   Clock,
-  LogOut, // Adăugat LogOut pentru dropdown
+  LogOut, 
 } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
+
+
 
 const HomePage = () => {
-  const navigate = useNavigate();
-  // Stare pentru controlul meniului dropdown
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#001f3f] font-sans">
-      <nav className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center gap-8">
-          <span className="text-xl font-bold tracking-tighter text-[#001f3f]">
-            Portal Universitar
-          </span>
-          <div className="hidden md:flex gap-6 text-[10px] font-black uppercase tracking-widest items-center">
-            <NavLink
-              to="/home"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1 transition-all"
-                  : "text-gray-400 hover:text-[#001f3f] transition-colors"
-              }
-            >
-              Acasă
-            </NavLink>
-
-            <NavLink
-              to="/catalog"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1 transition-all"
-                  : "text-gray-400 hover:text-[#001f3f] transition-colors"
-              }
-            >
-              Catalog
-            </NavLink>
-
-            <NavLink
-              to="/services"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1 transition-all"
-                  : "text-gray-400 hover:text-[#001f3f] transition-colors"
-              }
-            >
-              Servicii
-            </NavLink>
-
-            <NavLink
-              to="/settings"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1 transition-all"
-                  : "text-gray-400 hover:text-[#001f3f] transition-colors"
-              }
-            >
-              Setări
-            </NavLink>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-5">
-          <div className="relative hidden sm:block">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-              size={14}
-            />
-            <input
-              type="text"
-              placeholder="Caută resurse..."
-              className="bg-gray-100 border-none rounded-lg py-2 pl-9 pr-4 text-xs w-64 focus:ring-1 focus:ring-blue-900 outline-none"
-            />
-          </div>
-
-          <Bell
-            size={18}
-            className="text-gray-400 cursor-pointer hover:text-blue-900 transition-colors"
-          />
-
-          {/* DROP DOWN PROFIL */}
-          <div className="relative">
-            <div
-              className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 cursor-pointer hover:ring-2 hover:ring-blue-900 transition-all shadow-sm"
-              onClick={() => setIsProfileOpen(!isProfileOpen)}
-            >
-              <img src="https://i.pravatar.cc/150?u=student" alt="profil" />
-            </div>
-
-            {isProfileOpen && (
-              <>
-                {/* Overlay pentru a închide dropdown-ul la click în afară */}
-                <div
-                  className="fixed inset-0 z-10"
-                  onClick={() => setIsProfileOpen(false)}
-                ></div>
-
-                <div className="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-20 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
-                    <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest">
-                      Student
-                    </p>
-                    <p className="text-sm font-bold text-[#001f3f] truncate">
-                      Ion Popescu
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => {
-                      navigate("/settings");
-                      setIsProfileOpen(false);
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-900 transition-colors"
-                  >
-                    <Settings size={16} /> Setări Cont
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      /* Logout logic */ navigate("/");
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 transition-colors border-t border-gray-50"
-                  >
-                    <LogOut size={16} /> Deconectare
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </nav>
+      
 
       <main className="max-w-7xl mx-auto px-8 py-12">
         {/* HERO SECTION */}
@@ -156,20 +34,6 @@ const HomePage = () => {
               Rămâneți informați cu cele mai recente descoperiri, evenimente și
               anunțuri pentru studentul modern.
             </p>
-          </div>
-          <div className="flex gap-12 mt-8 md:mt-0 pb-2">
-            <div className="text-right border-r border-gray-100 pr-12">
-              <p className="text-4xl font-bold text-[#001f3f]">9.45</p>
-              <p className="text-[9px] font-black uppercase text-gray-400 tracking-[0.15em]">
-                Media Generală
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-4xl font-bold text-[#001f3f]">180</p>
-              <p className="text-[9px] font-black uppercase text-gray-400 tracking-[0.15em]">
-                Credite ECTS
-              </p>
-            </div>
           </div>
         </div>
 
