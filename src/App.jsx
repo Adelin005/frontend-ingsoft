@@ -16,7 +16,7 @@ import { auth } from "./firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useState, useEffect } from "react";
 import { AlertProvider } from "./Alerts";
-
+import AdminPage from "./AdminPage";
 
 
 function App() {
@@ -31,7 +31,7 @@ function App() {
     });
     return () => unsubscribe();
   }, []);
-
+  const [searchQuery, setSearchQuery] = useState("");
   if (loading) return <div>Se încarcă...</div>;
   return (
     <AlertProvider>
@@ -47,7 +47,11 @@ function App() {
   {/* Rute Protejate cu Layout (Navbar, Nume, Notificări) */}
   <Route 
     path="/home" 
-    element={user ? <Layout><HomePage /></Layout> : <Navigate to="/" />} 
+    element={user ? (
+      <Layout searchQuery={searchQuery} setSearchQuery={setSearchQuery}>
+        <HomePage searchQuery={searchQuery} />
+      </Layout>
+    ) : <Navigate to="/" />} 
   />
   <Route 
     path="/catalog" 
@@ -61,7 +65,10 @@ function App() {
     path="/settings" 
     element={user ? <Layout><SettingsPage /></Layout> : <Navigate to="/" />} 
   />
-
+<Route 
+  path="/admin" 
+  element={user?.email === "admin@student.uoradea.ro" ? <AdminPage /> : <Navigate to="/home" />} 
+/>
   <Route path="*" element={<Navigate to="/" />} />
 </Routes>
         </div>

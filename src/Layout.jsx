@@ -3,21 +3,12 @@ import { auth, db } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { 
-  Bell, Settings, LogOut, Clock, 
-  CheckCircle, AlertCircle, X, Info 
-} from "lucide-react";
+import { Bell, Settings, LogOut, Clock } from "lucide-react";
 
-// IMPORTANT: Importă hook-ul din noul fișier creat
-
-
-const Layout = ({ children }) => {
+const Layout = ({ children, searchQuery, setSearchQuery }) => {
   const navigate = useNavigate();
-  const location = useLocation()
-  
-  // 1. Folosim hook-ul global în loc de useState local
+  const location = useLocation();
 
-  
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [userName, setUserName] = useState("Student");
@@ -56,6 +47,7 @@ const Layout = ({ children }) => {
       
       {/* NAVBAR */}
       <nav className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between sticky top-0 z-50">
+        {/* Logo + NavLinks */}
         <div className="flex items-center gap-8">
           <span className="text-xl font-bold tracking-tighter text-[#001f3f] cursor-pointer" onClick={() => navigate("/home")}>
             Portal Universitar
@@ -65,20 +57,49 @@ const Layout = ({ children }) => {
             <NavLink to="/catalog" className={({ isActive }) => isActive ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1" : "text-gray-400 hover:text-[#001f3f]"}>Catalog</NavLink>
             <NavLink to="/services" className={({ isActive }) => isActive ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1" : "text-gray-400 hover:text-[#001f3f]"}>Servicii</NavLink>
             <NavLink to="/settings" className={({ isActive }) => isActive ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1" : "text-gray-400 hover:text-[#001f3f]"}>Setări</NavLink>
+            {auth.currentUser.email === "admin@student.uoradea.ro" && (
+              <NavLink to="/admin" className={({ isActive }) => isActive ? "text-[#001f3f] border-b-2 border-[#001f3f] pb-1" : "text-gray-400 hover:text-[#001f3f]"}>Admin</NavLink>
+            )}
           </div>
         </div>
 
+        {/* Search + Notifications + Profile */}
         <div className="flex items-center gap-5">
+          
+          {/* SEARCH BAR DOAR PE HOME */}
+          {location.pathname === "/home" && (
+  <input
+    type="text"
+    placeholder="Caută articole..."
+    value={searchQuery}
+    onChange={(e) => setSearchQuery(e.target.value)}
+    className="w-64 p-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 mr-4"
+  />
+)}
+
           {/* NOTIFICARI */}
           <div className="relative">
-            <div className="relative cursor-pointer group p-1" onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setIsProfileOpen(false); }}>
-              <Bell size={20} className={isNotificationsOpen ? 'text-blue-600' : 'text-gray-400'} />
+            <div
+              className="relative cursor-pointer p-1"
+              onClick={() => {
+                setIsNotificationsOpen(!isNotificationsOpen);
+                setIsProfileOpen(false);
+              }}
+            >
+              <Bell
+                size={20}
+                className={isNotificationsOpen ? "text-blue-600" : "text-gray-400"}
+              />
               <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 border border-white rounded-full"></span>
             </div>
+
             {isNotificationsOpen && (
               <>
-                <div className="fixed inset-0 z-10" onClick={() => setIsNotificationsOpen(false)}></div>
-                <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-20 overflow-hidden">
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setIsNotificationsOpen(false)}
+                ></div>
+                <div className="absolute right-0 mt-3 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-20 overflow-hidden animate-in fade-in zoom-in duration-200">
                   <div className="px-5 py-4 border-b border-gray-50 flex justify-between items-center bg-gray-50/30">
                     <h3 className="text-xs font-black uppercase tracking-widest">Notificări</h3>
                   </div>
@@ -100,26 +121,35 @@ const Layout = ({ children }) => {
 
           {/* PROFIL */}
           <div className="relative">
-            <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 cursor-pointer" onClick={() => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); }}>
+            <div
+              className="w-8 h-8 rounded-full overflow-hidden border border-gray-200 cursor-pointer"
+              onClick={() => { setIsProfileOpen(!isProfileOpen); setIsNotificationsOpen(false); }}
+            >
               <img src="https://i.pravatar.cc/150?u=student" alt="profil" />
             </div>
+
             {isProfileOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setIsProfileOpen(false)}></div>
                 <div className="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-20 overflow-hidden">
                   <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Student</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cont</p>
                     <p className="text-sm font-bold truncate">{userName}</p>
                   </div>
+
                   {location.pathname !== "/settings" && (
-                  <button
-                    onClick={() => { navigate("/settings"); setIsProfileOpen(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-900 transition-colors"
-                  >
-                    <Settings size={16} /> Setări Cont
-                  </button>
+                    <button
+                      onClick={() => { navigate("/settings"); setIsProfileOpen(false); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-900 transition-colors"
+                    >
+                      <Settings size={16} /> Setări Cont
+                    </button>
                   )}
-                  <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 border-t border-gray-50 mt-1">
+
+                  <button 
+                    onClick={handleLogout} 
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50 border-t border-gray-50 mt-1"
+                  >
                     <LogOut size={16} /> Deconectare
                   </button>
                 </div>
@@ -129,12 +159,9 @@ const Layout = ({ children }) => {
         </div>
       </nav>
 
-      {/* CONTINUTUL PAGINII */}
       <main className="flex-grow">
         {children}
       </main>
-
-      {/* ALERTĂ GLOBALĂ - UI-ul rămâne aici pentru a fi vizibil pe orice pagină */}
     </div>
   );
 };

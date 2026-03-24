@@ -15,7 +15,28 @@ import {
 
 
 
-const HomePage = () => {
+const HomePage = ({ searchQuery }) => {
+const articles = [
+    {
+      t: "Bursele de Merit 2024: Aplicațiile sunt acum deschise",
+      tag: "Admiteri",
+    },
+    {
+      t: "Programarea Examenelor Finale pentru Semestrul 2",
+      tag: "Academic",
+    },
+    {
+      t: "Extinderea Opțiunilor Sustenabile în Cafenele",
+      tag: "Campus",
+    },
+  ];
+
+  // Filtrare după searchQuery
+  const filteredArticles = articles.filter(
+    (a) =>
+      a.t.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.tag.toLowerCase().includes(searchQuery.toLowerCase())
+  );
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#001f3f] font-sans">
       
@@ -74,20 +95,7 @@ const HomePage = () => {
               <span className="text-blue-500 italic">✦</span> Tendințe Acum
             </h3>
             <div className="space-y-10">
-              {[
-                {
-                  t: "Bursele de Merit 2024: Aplicațiile sunt acum deschise",
-                  tag: "Admiteri",
-                },
-                {
-                  t: "Programarea Examenelor Finale pentru Semestrul 2",
-                  tag: "Academic",
-                },
-                {
-                  t: "Extinderea Opțiunilor Sustenabile în Cafenele",
-                  tag: "Campus",
-                },
-              ].map((item, idx) => (
+              {filteredArticles.map((item, idx) => (
                 <div
                   key={idx}
                   className="group cursor-pointer flex gap-5 items-center"

@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 import {
   Bell,
   Settings,
@@ -62,6 +64,67 @@ const CatalogPage = () => {
     };
     fetchGrades();
   }, []);
+
+const handleDownloadPDF = () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const s1Courses = grades.filter(g => g.semester === 1);
+  const s2Courses = grades.filter(g => g.semester === 2);
+
+  const doc = new jsPDF("p", "mm", "a4");
+  let y = 20;
+
+  // Header
+  doc.setFontSize(22);
+  doc.text("FISA MATRICOLA", 105, y, { align: "center" });
+  y += 10;
+
+  doc.setFontSize(12);
+  doc.text(`CNP Student: ${user.uid}`, 20, y);
+  doc.text(`Email: ${user.email}`, 20, y + 6);
+  doc.text(`Bursa Sem 1: ${studentStatusS1 || "N/A"}`, 20, y + 12);
+  doc.text(`Bursa Sem 2: ${studentStatusS2 || "N/A"}`, 20, y + 18);
+  y += 30;
+
+  const drawSemesterTable = (semester, courses) => {
+    doc.setFontSize(14);
+    doc.setTextColor(0, 0, 128);
+    doc.text(`Semestrul ${semester}`, 20, y);
+
+    y += 6;
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+
+    // Header tabel
+    doc.setFillColor(220, 220, 220);
+    doc.rect(20, y, 170, 7, "F");
+    doc.text("Cod", 22, y + 5);
+    doc.text("Materie", 50, y + 5);
+    doc.text("Credite", 130, y + 5);
+    doc.text("Nota", 150, y + 5);
+    y += 10;
+
+    courses.forEach((c) => {
+      doc.text(c.c, 22, y);
+      doc.text(c.n, 50, y);
+      doc.text(`${c.cr}`, 132, y);
+      doc.text(`${c.g}`, 152, y);
+      y += 8;
+
+      if (y > 280) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+    y += 10;
+  };
+
+  drawSemesterTable(1, s1Courses);
+  drawSemesterTable(2, s2Courses);
+
+  doc.save(`FisaMatricola_${user.uid}.pdf`);
+};
     const calculateStats = (subjects) => {
     if (subjects.length === 0) return { avg: "0.00", credits: 0 };
     const totalWeighted = subjects.reduce((acc, curr) => acc + (curr.g * curr.cr), 0);
@@ -153,6 +216,7 @@ const CatalogPage = () => {
         </div>
         <span className="text-lg font-black text-[#001f3f]">{studentStatusS2}</span>
       </div>
+      
     </div>
         </h3>
             </div>
@@ -167,6 +231,24 @@ const CatalogPage = () => {
           <SemesterTable title="Semestrul 1" badge="TOAMNĂ 2025" stats={calculateStats(s1)} courses={s1} />
           <SemesterTable title="Semestrul 2" badge="PRIMĂVARĂ 2026" stats={calculateStats(s2)} courses={s2} />
         </div>
+       <div className="mt-24 flex justify-center">
+  <div className="bg-[#f1f3f5] p-12 rounded-[3rem] border border-gray-200 flex flex-col lg:flex-row items-center justify-center gap-10">
+    <div className="max-w-xl text-center">
+      <h3 className="text-2xl font-bold mb-3 text-[#001f3f]">
+        Solicitare Foaie Matricolă?
+      </h3>
+      <p className="text-gray-500 text-base font-medium leading-relaxed">
+        Documentele semnate digital sunt disponibile imediat în format PDF.
+      </p>
+    </div>
+    <button
+  onClick={handleDownloadPDF}
+  className="bg-[#001f3f] text-white px-10 py-5 rounded-2xl font-bold text-sm flex items-center gap-3 shadow-xl hover:bg-blue-900 transition-all"
+>
+  <Download size={20} /> Descarcă PDF
+</button>
+  </div>
+</div>
       </main>
     </div>
   );
