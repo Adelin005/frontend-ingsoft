@@ -134,7 +134,7 @@ const Layout = ({ children, searchQuery, setSearchQuery }) => {
                 <div className="absolute right-0 mt-3 w-48 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-20 overflow-hidden">
                   <div className="px-4 py-3 border-b border-gray-50 bg-gray-50/50">
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cont</p>
-                    <p className="text-sm font-bold truncate">{userName}</p>
+                    <p className="text-sm font-bold truncate"> {auth.currentUser.email === "admin@student.uoradea.ro" ? "Admin" : userName}</p>
                   </div>
 
                   {location.pathname !== "/settings" && (

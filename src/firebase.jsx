@@ -3,7 +3,7 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // Configurația ta reală
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyAu0jc0oPGDcMccGk-JFfr7sy9_9Nj2xLQ",
   authDomain: "university-website-fe21d.firebaseapp.com",
   projectId: "university-website-fe21d",

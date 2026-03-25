@@ -10,7 +10,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { db, auth } from "./firebase";
-import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
+import stampilaImg from "./assets/stampila.jpeg";
 
 const CatalogPage = () => {
   const [grades, setGrades] = useState([]);
@@ -18,7 +19,23 @@ const CatalogPage = () => {
   const [studentStatusS1, setStudentStatusS1] = useState();
   const [studentStatusS2, setStudentStatusS2] = useState();
 
+  const updateBursa = async (semester, avg) => {
+  const user = auth.currentUser;
+  if (!user) return;
 
+  const userDocRef = doc(db, "student", user.uid);
+
+  if (avg >= 9.5) {
+    // dacă media >= 9.5, setează bursă de merit
+    await updateDoc(userDocRef, {
+      [semester === 1 ? "bursa_s1" : "bursa_s2"]: "Bursa auto"
+    });
+
+    // actualizează și starea locală
+    if (semester === 1) setStudentStatusS1("Bursa auto");
+    else setStudentStatusS2("Bursa auto");
+  }
+};
   useEffect(() => {
     const fetchGrades = async () => {
       try {
@@ -31,8 +48,8 @@ const CatalogPage = () => {
           const userDocSnap = await getDoc(userDocRef);
           
           if (userDocSnap.exists()) {
-            setStudentStatusS1(userDocSnap.data().bursa_s1);
-            setStudentStatusS2(userDocSnap.data().bursa_s2);
+            setStudentStatusS1(userDocSnap.data().bursa_s1 || "Fara Bursa");
+            setStudentStatusS2(userDocSnap.data().bursa_s2 || "Fara Bursa");
           }
          const q = query(
             collection(db, "grades"),
@@ -53,11 +70,18 @@ const CatalogPage = () => {
               studentId: item.studentId    // Semestru
             };
           });
-          console.log("Student UID logat:", uid);
-          console.log("Grades studentId:", data.map(g => g.studentId));
-          console.log("uid", uid);
           setGrades(data);
           
+          const s1 = data.filter(g => g.semester === 1);
+const s2 = data.filter(g => g.semester === 2);
+
+const statsS1 = calculateStats(s1);
+const statsS2 = calculateStats(s2);
+
+// verificăm dacă studentul merită bursă
+updateBursa(1, parseFloat(statsS1.avg));
+updateBursa(2, parseFloat(statsS2.avg));
+
         }
       } catch (error) {
         console.error("Eroare la încărcare:", error);
@@ -68,7 +92,7 @@ const CatalogPage = () => {
     fetchGrades();
   }, []);
 
-const handleDownloadPDF = () => {
+const handleDownloadPDF = async () => {
   const user = auth.currentUser;
   if (!user) return;
 
@@ -126,6 +150,19 @@ const handleDownloadPDF = () => {
   drawSemesterTable(1, s1Courses);
   drawSemesterTable(2, s2Courses);
 
+  try {
+    const imgElement = new Image();
+    imgElement.src = stampilaImg;
+    await new Promise((resolve, reject) => {
+      imgElement.onload = resolve;
+      imgElement.onerror = reject;
+    });
+    // plasam ștampila în dreapta jos (x=160, y=250), dimensiune 40x40
+    doc.addImage(imgElement, "JPEG", 160, 250, 40, 40);
+  } catch (error) {
+    console.error("Eroare la adăugarea ștampilei în PDF:", error);
+  }
+
   doc.save(`FisaMatricola_${user.uid}.pdf`);
 };
     const calculateStats = (subjects) => {
@@ -140,6 +177,10 @@ const handleDownloadPDF = () => {
   const s1 = grades.filter(g => g.semester === 1);
   const s2 = grades.filter(g => g.semester === 2);
   const annualStats = calculateStats(grades);  
+
+
+
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#f8f9fa]">
@@ -147,6 +188,8 @@ const handleDownloadPDF = () => {
       </div>
     );
   }
+
+
 
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#001f3f] font-sans pb-20">

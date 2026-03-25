@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { db} from "./firebase";
-import { addDoc, getDoc} from "firebase/firestore";
-
+import { addDoc, getDoc,setDoc} from "firebase/firestore";
+import { firebaseConfig } from "./firebase";
 import { 
   collection, 
   getDocs, 
@@ -11,6 +11,8 @@ import {
   query, 
   where 
 } from "firebase/firestore";
+import { initializeApp, deleteApp } from "firebase/app";
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { useAlert } from "./components/useAlert.js";
 import { 
   User, 
@@ -18,17 +20,22 @@ import {
   Save, 
   GraduationCap, 
   Search, 
-  ChevronRight 
+  ChevronRight,
+  UserPlus,
+  X 
 } from "lucide-react";
 import Layout from "./Layout";
 
 const AdminPage = () => {
   const { showAlert } = useAlert();
   
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState([]); 
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [allGrades, setAllGrades] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newStudent, setNewStudent] = useState({ Nume: "", Prenume: "", CNP: "", password: "", Specializare: "C" });
+  const [addingStudent, setAddingStudent] = useState(false);
 
   // 🔹 FETCH STUDENȚI
   const fetchStudents = async () => {
@@ -117,7 +124,9 @@ const AdminPage = () => {
             credits: g.credits,
             grade: g.grade,
             semester: g.semester,
-            studentId: selectedStudent.id
+            studentId: selectedStudent.id,
+            specializare: ""
+
           });
         } else {
           const gradeRef = doc(db, "grades", g.id);
@@ -171,10 +180,94 @@ const AdminPage = () => {
       credits: 0,
       grade: 0,
       semester: semester,
-      studentId: selectedStudent.id,
+      studentId: "",
+      specializare: "",
       isNew: true
     };
     setAllGrades(prev => [...prev, newSubject]);
+  };
+
+  // 🔹 ADD STUDENT (Firebase Auth + Firestore)
+  const handleAddStudent = async () => {  
+    const { Nume, Prenume, CNP, password, Specializare } = newStudent;
+
+    if (!Nume || !Prenume || !CNP || !password) {
+      showAlert("Completează toate câmpurile obligatorii!", "error");
+      return;
+    }
+    if (password.length < 6) {
+      showAlert("Parola trebuie să aibă minim 6 caractere!", "error");
+      return;
+    }
+
+    setAddingStudent(true);
+    let secondaryApp = null;
+
+    try {
+      // Creăm o instanță secundară Firebase pentru a nu afecta sesiunea admin
+      secondaryApp = initializeApp(firebaseConfig, "tempAddStudent");
+      const secondaryAuth = getAuth(secondaryApp);
+
+      const email = `${CNP}@student.uoradea.ro`;
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+      const uid = userCredential.user.uid;
+
+      // Ștergem instanța secundară
+      await deleteApp(secondaryApp);
+      secondaryApp = null;
+
+      await setDoc(doc(db, "student", uid), {
+        CNP,
+        Nume,
+        Prenume,
+        Specializare,
+        bursa_s1: "",
+        bursa_s2: "",
+        email,
+        id: uid
+      });
+
+      // ---- AUTO POPULATE GRADES DIRECTLY FROM EXISTING DB REORDS ----
+      // Determinăm prefixul materiei (ex: "C-" sau "TI-")
+     const qSubjects = query(
+  collection(db, "grades"),
+  where("specializare", "==", Specializare),
+  where("studentId", "==", "")
+);
+
+const subjectsSnap = await getDocs(qSubjects);
+
+const gradePromises = subjectsSnap.docs.map(subjectDoc => {
+  const subj = subjectDoc.data();
+  return addDoc(collection(db, "grades"), {
+    code: subj.code,
+    subject: subj.subject,
+    credits: subj.credits,
+    semester: subj.semester,
+    grade: 0,
+    studentId: uid
+  });
+});
+
+await Promise.all(gradePromises);
+
+      showAlert(`Studentul ${Prenume} ${Nume} a fost creat cu succes!`, "success");
+      setShowAddModal(false);
+      setNewStudent({ Nume: "", Prenume: "", CNP: "", password: "", Specializare: "C" });
+      fetchStudents();
+    } catch (error) {
+      console.error(error);
+      if (secondaryApp) {
+        try { await deleteApp(secondaryApp); } catch {/* ignore */}
+      }
+      if (error.code === "auth/email-already-in-use") {
+        showAlert("Un student cu acest CNP există deja!", "error");
+      } else {
+        showAlert("Eroare la crearea studentului: " + error.message, "error");
+      }
+    } finally {
+      setAddingStudent(false);
+    }
   };
 
   return (
@@ -219,10 +312,15 @@ const AdminPage = () => {
                 <ChevronRight size={16} className={selectedStudent?.id === s.id ? 'text-white' : 'text-gray-300'} />
               </div>
             ))}
-            <div className="mt-auto px-2">
-
-</div>
           </div>
+
+          {/* Buton Adaugă Student */}
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="w-full mt-4 bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 hover:-translate-y-0.5 active:translate-y-0 transition-all flex items-center justify-center gap-2"
+          >
+            <UserPlus size={18} /> Adaugă Student
+          </button>
         </div>
 
         {/* DREAPTA */}
@@ -292,33 +390,33 @@ const AdminPage = () => {
                   </div>
 
                   <div className="space-y-4">
-                    {allGrades.filter(g => g.semester === sem).length > 0 ? (
-                      allGrades.filter(g => g.semester === sem).map((gradeDoc) => (
-                        <div key={gradeDoc.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-8 hover:shadow-md transition-shadow">
-                          <div className="flex-grow">
-                            <input
-                              type="text"
-                              className="text-[10px] font-black uppercase text-gray-400 mb-1 tracking-tighter bg-transparent outline-none border-b border-transparent focus:border-blue-400"
-                              value={gradeDoc.code || ""}
-                              onChange={(e) => {
-                                const updated = allGrades.map(g =>
-                                  g.id === gradeDoc.id ? { ...g, code: e.target.value } : g
-                                );
-                                setAllGrades(updated);
-                              }}
-                            />
-                            <input
-                              type="text"
-                              className="font-bold text-[#001f3f] text-base bg-transparent outline-none border-b border-transparent focus:border-blue-400"
-                              value={gradeDoc.subject || ""}
-                              onChange={(e) => {
-                                const updated = allGrades.map(g =>
-                                  g.id === gradeDoc.id ? { ...g, subject: e.target.value } : g
-                                );
-                                setAllGrades(updated);
-                              }}
-                            />
-                            <button
+                      {allGrades.filter(g => g.semester === sem).length > 0 ? (
+                        allGrades.filter(g => g.semester === sem).map((gradeDoc) => (
+                          <div key={gradeDoc.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-8 hover:shadow-md transition-shadow">
+                            <div className="flex-grow">
+                              <input
+                                type="text"
+                                className="text-[10px] font-black uppercase text-gray-400 mb-1 tracking-tighter bg-transparent outline-none border-b border-transparent focus:border-blue-400"
+                                value={gradeDoc.code || ""}
+                                onChange={(e) => {
+                                  const updated = allGrades.map(g =>
+                                    g.id === gradeDoc.id ? { ...g, code: e.target.value } : g
+                                  );
+                                  setAllGrades(updated);
+                                }}
+                              />  
+                              <input
+                                type="text"
+                                className="font-bold text-[#001f3f] text-base bg-transparent outline-none border-b border-transparent focus:border-blue-400"
+                                value={gradeDoc.subject || ""}
+                                onChange={(e) => {
+                                  const updated = allGrades.map(g =>
+                                    g.id === gradeDoc.id ? { ...g, subject: e.target.value } : g
+                                  );
+                                  setAllGrades(updated);
+                                }}
+                              />
+                              <button
                               onClick={() => handleDeleteGrade(gradeDoc)}
                               className="text-red-400 hover:text-red-600 transition"
                             >
@@ -383,6 +481,103 @@ const AdminPage = () => {
           )}
         </div>
       </div>
+      {/* MODAL ADAUGĂ STUDENT */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md p-8 relative animate-in">
+            <button
+              onClick={() => setShowAddModal(false)}
+              className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="bg-blue-100 p-3 rounded-xl">
+                <UserPlus size={22} className="text-blue-600" />
+              </div>
+              <h3 className="text-xl font-black text-[#001f3f]">Student Nou</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Prenume *</label>
+                  <input
+                    type="text"
+                    placeholder="Ion"
+                    value={newStudent.Prenume}
+                    onChange={(e) => setNewStudent({ ...newStudent, Prenume: e.target.value })}
+                    className="w-full bg-gray-50 p-3.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-600/20 border border-gray-100 focus:border-blue-300 transition-all"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Nume *</label>
+                  <input
+                    type="text"
+                    placeholder="Popescu"
+                    value={newStudent.Nume}
+                    onChange={(e) => setNewStudent({ ...newStudent, Nume: e.target.value })}
+                    className="w-full bg-gray-50 p-3.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-600/20 border border-gray-100 focus:border-blue-300 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">CNP (ID Național) *</label>
+                <input
+                  type="text"
+                  placeholder="1234567890123"
+                  value={newStudent.CNP}
+                  onChange={(e) => setNewStudent({ ...newStudent, CNP: e.target.value })}
+                  className="w-full bg-gray-50 p-3.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-600/20 border border-gray-100 focus:border-blue-300 transition-all"
+                />
+                <p className="text-[10px] text-gray-400 mt-1">Email generat: {newStudent.CNP ? `${newStudent.CNP}@student.uoradea.ro` : "—"}</p>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Parolă *</label>
+                <input
+                  type="text"
+                  placeholder="Minim 6 caractere"
+                  value={newStudent.password}
+                  onChange={(e) => setNewStudent({ ...newStudent, password: e.target.value })}
+                  className="w-full bg-gray-50 p-3.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-600/20 border border-gray-100 focus:border-blue-300 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Specializare</label>
+                <select
+                  value={newStudent.Specializare}
+                  onChange={(e) => setNewStudent({ ...newStudent, Specializare: e.target.value })}
+                  className="w-full bg-gray-50 p-3.5 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-600/20 border border-gray-100 focus:border-blue-300 transition-all cursor-pointer"
+                >
+                  <option value="C">C (Calculatoare)</option>
+                  <option value="TI">TI (Tehnologia Informației)</option>
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleAddStudent}
+              disabled={addingStudent}
+              className="w-full mt-6 bg-[#001f3f] text-white py-4 rounded-xl font-bold shadow-xl hover:bg-blue-950 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {addingStudent ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Se creează...
+                </>
+              ) : (
+                <>
+                  <UserPlus size={18} /> Creează Studentul
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
