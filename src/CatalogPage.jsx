@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { db, auth } from "./firebase";
 import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
+import stampilaImg from "./assets/stampila.jpeg";
 
 const CatalogPage = () => {
   const [grades, setGrades] = useState([]);
@@ -65,7 +66,7 @@ const CatalogPage = () => {
     fetchGrades();
   }, []);
 
-const handleDownloadPDF = () => {
+const handleDownloadPDF = async () => {
   const user = auth.currentUser;
   if (!user) return;
 
@@ -122,6 +123,19 @@ const handleDownloadPDF = () => {
 
   drawSemesterTable(1, s1Courses);
   drawSemesterTable(2, s2Courses);
+
+  try {
+    const imgElement = new Image();
+    imgElement.src = stampilaImg;
+    await new Promise((resolve, reject) => {
+      imgElement.onload = resolve;
+      imgElement.onerror = reject;
+    });
+    // plasam ștampila în dreapta jos (x=160, y=250), dimensiune 40x40
+    doc.addImage(imgElement, "JPEG", 160, 250, 40, 40);
+  } catch (error) {
+    console.error("Eroare la adăugarea ștampilei în PDF:", error);
+  }
 
   doc.save(`FisaMatricola_${user.uid}.pdf`);
 };
