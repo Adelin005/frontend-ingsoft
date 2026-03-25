@@ -272,10 +272,10 @@ await Promise.all(gradePromises);
 
   return (
     <Layout>
-      <div className="max-w-7xl mx-auto p-6 flex flex-col md:flex-row gap-8 h-[calc(100vh-100px)]">
+      <div className="max-w-7xl mx-auto p-4 md:p-6 flex flex-col md:flex-row gap-8 min-h-screen md:min-h-0 md:h-[calc(100vh-100px)]">
         
         {/* STÂNGA */}
-        <div className="md:w-1/3 bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-6 flex flex-col overflow-hidden">
+        <div className="w-full md:w-1/3 bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-6 flex flex-col overflow-hidden max-h-[500px] md:max-h-full">
           <h2 className="text-xl font-bold mb-5 flex items-center gap-3 px-2 text-[#001f3f]">
             <User size={22} className="text-blue-600" /> Studenți ({filteredStudents.length})
           </h2>
@@ -324,7 +324,7 @@ await Promise.all(gradePromises);
         </div>
 
         {/* DREAPTA */}
-        <div className="md:w-2/3 bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-10 overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-2/3 bg-white rounded-[2.5rem] shadow-sm border border-gray-100 p-6 md:p-10 overflow-y-auto custom-scrollbar">
           {selectedStudent ? (
             <div className="space-y-10">
               
@@ -392,8 +392,8 @@ await Promise.all(gradePromises);
                   <div className="space-y-4">
                       {allGrades.filter(g => g.semester === sem).length > 0 ? (
                         allGrades.filter(g => g.semester === sem).map((gradeDoc) => (
-                          <div key={gradeDoc.id} className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm flex items-center gap-8 hover:shadow-md transition-shadow">
-                            <div className="flex-grow">
+                          <div key={gradeDoc.id} className="bg-white p-4 md:p-6 rounded-[2rem] border border-gray-100 shadow-sm flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 hover:shadow-md transition-shadow">
+                            <div className="flex-grow w-full md:w-auto relative">
                               <input
                                 type="text"
                                 className="text-[10px] font-black uppercase text-gray-400 mb-1 tracking-tighter bg-transparent outline-none border-b border-transparent focus:border-blue-400"
@@ -418,13 +418,13 @@ await Promise.all(gradePromises);
                               />
                               <button
                               onClick={() => handleDeleteGrade(gradeDoc)}
-                              className="text-red-400 hover:text-red-600 transition"
+                              className="text-red-400 hover:text-red-600 transition absolute right-2 top-2 md:static md:right-auto md:top-auto"
                             >
                               <Trash2 size={18} />
                             </button>
                           </div>
 
-                          <div className="flex items-center gap-10">
+                          <div className="flex items-center justify-between w-full md:w-auto gap-4 md:gap-10">
                             <div className="text-center">
                               <label className="block text-[9px] font-black text-gray-400 uppercase mb-2">Credite</label>
                               <input 
@@ -484,7 +484,7 @@ await Promise.all(gradePromises);
       {/* MODAL ADAUGĂ STUDENT */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md p-8 relative animate-in">
+          <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-md p-6 md:p-8 relative animate-in max-h-[90vh] overflow-y-auto custom-scrollbar">
             <button
               onClick={() => setShowAddModal(false)}
               className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 transition"

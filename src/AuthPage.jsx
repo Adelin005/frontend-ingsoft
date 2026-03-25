@@ -29,7 +29,7 @@ const handleSubmit = async (e) => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 md:p-10 bg-[#f3f4f6]">
-      <div className="max-w-6xl w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[750px]">
+      <div className="max-w-6xl w-full bg-white rounded-[2rem] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px] md:min-h-[750px]">
         <div className="md:w-[45%] bg-[#001f3f] p-8 md:p-12 text-white flex flex-col justify-between relative">
           <div>
             <div className="flex items-center gap-2 mb-12">

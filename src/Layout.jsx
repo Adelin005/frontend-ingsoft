@@ -3,7 +3,7 @@ import { auth, db } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
-import { Bell, Settings, LogOut, Clock } from "lucide-react";
+import { Bell, Settings, LogOut, Clock, Menu, X } from "lucide-react";
 
 const Layout = ({ children, searchQuery, setSearchQuery }) => {
   const navigate = useNavigate();
@@ -11,6 +11,7 @@ const Layout = ({ children, searchQuery, setSearchQuery }) => {
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [userName, setUserName] = useState("Student");
 
   const notifications = [
@@ -46,10 +47,18 @@ const Layout = ({ children, searchQuery, setSearchQuery }) => {
     <div className="min-h-screen bg-[#f8f9fa] text-[#001f3f] font-sans flex flex-col">
       
       {/* NAVBAR */}
-      <nav className="bg-white border-b border-gray-100 px-8 py-4 flex items-center justify-between sticky top-0 z-50">
+      <nav className="bg-white border-b border-gray-100 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-50">
         {/* Logo + NavLinks */}
-        <div className="flex items-center gap-8">
-          <span className="text-xl font-bold tracking-tighter text-[#001f3f] cursor-pointer" onClick={() => navigate("/home")}>
+        <div className="flex items-center gap-4 md:gap-8">
+          {/* Hamburger Mobile Toggle */}
+          <button 
+            className="md:hidden text-[#001f3f] p-1"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+
+          <span className="text-lg md:text-xl font-bold tracking-tighter text-[#001f3f] cursor-pointer" onClick={() => navigate("/home")}>
             Portal Universitar
           </span>
           <div className="hidden md:flex gap-6 text-[10px] font-black uppercase tracking-widest items-center">
@@ -73,7 +82,7 @@ const Layout = ({ children, searchQuery, setSearchQuery }) => {
     placeholder="Caută articole..."
     value={searchQuery}
     onChange={(e) => setSearchQuery(e.target.value)}
-    className="w-64 p-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 mr-4"
+    className="w-24 sm:w-40 md:w-64 p-2 rounded-xl text-sm border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-600 mr-2 md:mr-4"
   />
 )}
 
@@ -157,6 +166,19 @@ const Layout = ({ children, searchQuery, setSearchQuery }) => {
             )}
           </div>
         </div>
+
+        {/* MOBILE MENU DROPDOWN */}
+        {isMobileMenuOpen && (
+          <div className="absolute top-full left-0 w-full bg-white border-b border-gray-100 shadow-xl flex flex-col p-6 gap-6 md:hidden z-40 animate-in fade-in slide-in-from-top-2">
+            <NavLink to="/home" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => isActive ? "text-[#001f3f] font-bold text-lg" : "text-gray-500 text-lg font-medium"}>Acasa</NavLink>
+            <NavLink to="/catalog" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => isActive ? "text-[#001f3f] font-bold text-lg" : "text-gray-500 text-lg font-medium"}>Catalog</NavLink>
+            <NavLink to="/services" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => isActive ? "text-[#001f3f] font-bold text-lg" : "text-gray-500 text-lg font-medium"}>Servicii</NavLink>
+            <NavLink to="/settings" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => isActive ? "text-[#001f3f] font-bold text-lg" : "text-gray-500 text-lg font-medium"}>Setări</NavLink>
+            {auth.currentUser?.email === "admin@student.uoradea.ro" && (
+              <NavLink to="/admin" onClick={() => setIsMobileMenuOpen(false)} className={({ isActive }) => isActive ? "text-[#001f3f] font-bold text-lg" : "text-gray-500 text-lg font-medium"}>Admin</NavLink>
+            )}
+          </div>
+        )}
       </nav>
 
       <main className="flex-grow">

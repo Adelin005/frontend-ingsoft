@@ -48,10 +48,10 @@ const articles = [
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600 mb-4 block italic">
               Presa Universitară
             </span>
-            <h1 className="text-5xl md:text-6xl font-bold leading-[1.1] max-w-2xl text-[#001f3f] tracking-tight text-balance">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.1] max-w-2xl text-[#001f3f] tracking-tight text-balance">
               Modelăm Viitorul Excelenței Academice
             </h1>
-            <p className="text-gray-400 mt-6 text-lg max-w-lg leading-relaxed font-medium">
+            <p className="text-gray-400 mt-6 text-base md:text-lg max-w-lg leading-relaxed font-medium">
               Rămâneți informați cu cele mai recente descoperiri, evenimente și
               anunțuri pentru studentul modern.
             </p>
@@ -64,7 +64,7 @@ const articles = [
             <div className="rounded-3xl overflow-hidden mb-8 shadow-xl">
               <img
                 src="https://images.pexels.com/photos/159711/books-bookstore-book-reading-159711.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                className="w-full h-[450px] object-cover group-hover:scale-105 transition-transform duration-700"
+                className="w-full h-[300px] md:h-[450px] object-cover group-hover:scale-105 transition-transform duration-700"
                 alt="Lansare"
               />
             </div>

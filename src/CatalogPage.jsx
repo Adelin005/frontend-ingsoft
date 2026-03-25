@@ -221,21 +221,19 @@ const handleDownloadPDF = async () => {
                 Total Credite
               </p>
               <h3 className="text-5xl font-bold text-[#001f3f]">{annualStats.credits} / 60</h3>
-              <div className="flex gap-4 mt-4 text-[11px] font-bold uppercase tracking-wider">
-      <div className="flex gap-4 mt-6">
-    <div className="flex items-center gap-2 bg-blue-50/50 px-3 py-1.5 rounded-xl">
-      <div className="w-2 h-2 rounded-full bg-blue-400"></div>
-      <span className="text-[15px] font-black uppercase text-gray-400">Sem 1:</span>
-      <span className="text-lg font-black text-[#001f3f]">{calculateStats(s1).credits}</span>
-    </div>
-    
-    <div className="flex items-center gap-2 bg-indigo-50/50 px-3 py-1.5 rounded-xl">
-      <div className="w-2 h-2 rounded-full bg-indigo-400"></div>
-      <span className="text-[15px] font-black uppercase text-gray-400">Sem 2:</span>
-      <span className="text-lg font-black text-[#001f3f]">{calculateStats(s2).credits}</span>
-    </div>
-  </div>
-            </div>
+              <div className="flex flex-col xl:flex-row gap-4 mt-6">
+                <div className="flex items-center gap-2 bg-blue-50/50 px-3 py-1.5 rounded-xl">
+                  <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                  <span className="text-[15px] font-black uppercase text-gray-400">Sem 1:</span>
+                  <span className="text-lg font-black text-[#001f3f]">{calculateStats(s1).credits}</span>
+                </div>
+                
+                <div className="flex items-center gap-2 bg-indigo-50/50 px-3 py-1.5 rounded-xl">
+                  <div className="w-2 h-2 rounded-full bg-indigo-400"></div>
+                  <span className="text-[15px] font-black uppercase text-gray-400">Sem 2:</span>
+                  <span className="text-lg font-black text-[#001f3f]">{calculateStats(s2).credits}</span>
+                </div>
+              </div>
             </div>
           </div>
           <div className="bg-white p-10 rounded-[2.5rem] border border-gray-100 shadow-sm flex flex-col justify-between">
@@ -313,8 +311,8 @@ const SemesterTable = ({ title, badge, stats ,courses }) => (
         <p className="text-3xl font-black text-blue-600">{stats.avg}</p>
       </div>
     </div>
-    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
-      <table className="w-full text-left">
+    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-x-auto custom-scrollbar">
+      <table className="w-full text-left min-w-[600px]">
         <thead>
           <tr className="bg-gray-50 text-[11px] font-black uppercase tracking-[0.25em] text-gray-400">
             <th className="px-10 py-7">Cod</th>
