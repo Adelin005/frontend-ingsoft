@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { db} from "./firebase";
 import { addDoc, getDoc} from "firebase/firestore";
+
 import { 
   collection, 
   getDocs, 
@@ -45,7 +46,6 @@ const AdminPage = () => {
     fetchStudents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   // 🔹 SELECT STUDENT
   const handleSelectStudent = async (student) => {
     try {
@@ -196,6 +196,7 @@ const AdminPage = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
+            
           </div>
 
           <div className="space-y-3 overflow-y-auto pr-2 custom-scrollbar">

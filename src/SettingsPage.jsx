@@ -59,7 +59,7 @@ const SettingsPage = () => {
     e.preventDefault();
     
     if (newPassword !== confirmPassword) {
-      alert("Parolele noi nu coincid!");
+      alert("Parolele  noi nu coincid!");
       return;
     }
 

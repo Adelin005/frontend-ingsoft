@@ -49,10 +49,13 @@ const CatalogPage = () => {
               n: item.subject || "N/A",   // Nume materie
               cr: item.credits || 0,      // Credite
               g: item.grade || 0,         // Notă
-              semester: item.semester,     // Semestru
+              semester: item.semester, 
+              studentId: item.studentId    // Semestru
             };
           });
-          
+          console.log("Student UID logat:", uid);
+          console.log("Grades studentId:", data.map(g => g.studentId));
+          console.log("uid", uid);
           setGrades(data);
           
         }
