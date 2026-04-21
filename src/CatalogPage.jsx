@@ -51,10 +51,9 @@ const CatalogPage = () => {
             setStudentStatusS1(userDocSnap.data().bursa_s1 || "Fara Bursa");
             setStudentStatusS2(userDocSnap.data().bursa_s2 || "Fara Bursa");
           }
-         const q = query(
-            collection(db, "grades"),
-            where("studentId", "==", uid)
-          );
+          const q = query(
+             collection(db, "student", uid, "grades")
+           );
           const querySnapshot = await getDocs(q);
           
           // Mapăm datele din Firebase (subject, grade, etc.) 
