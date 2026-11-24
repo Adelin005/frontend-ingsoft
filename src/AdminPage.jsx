@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { db, auth, firebaseConfig } from "./firebase";
+import { db, firebaseConfig } from "./firebase";
 import { initializeApp } from "firebase/app";
 import { getAuth, createUserWithEmailAndPassword, signOut } from "firebase/auth";
-import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, query, where, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, deleteDoc, setDoc, getDoc } from "firebase/firestore";
 import Layout from "./Layout";
 import { 
   Users, Search, Plus, Trash2, Edit, Save, X, Phone, Mail, 
@@ -76,7 +76,17 @@ const AdminPage = () => {
       if (activeTab === "grades_tab") {
         const gradesRef = collection(db, `student/${student.id}/grades`);
         const qGrades = await getDocs(gradesRef);
-        setAllGrades(qGrades.docs.map(d => ({ id: d.id, ...d.data() })));
+        setAllGrades(qGrades.docs.map(d => {
+          const item = d.data();
+          return {
+            id: d.id,
+            code: item.code || "COD",
+            subject: item.subject || "Materie",
+            credits: Number(item.credits) || 0,
+            grade: Number(item.grade) || 0,
+            semester: Number(item.semester) || 1
+          };
+        }));
         setShowDetailsModal(true);
       }
     } catch (err) {
@@ -88,13 +98,32 @@ const AdminPage = () => {
     if (!selectedStudent) return;
     try {
       const studentRef = doc(db, "student", selectedStudent.id);
+
+      // Calcul automat al burselor în funcție de media semestrială (prag 9.50)
+      const s1Grades = allGrades.filter(g => Number(g.semester) === 1);
+      const s2Grades = allGrades.filter(g => Number(g.semester) === 2);
+
+      const calcAverage = (gradesList) => {
+        const graded = gradesList.filter(g => Number(g.grade) > 0);
+        if (graded.length === 0) return 0;
+        const weighted = graded.reduce((acc, curr) => acc + (Number(curr.grade) * Number(curr.credits)), 0);
+        const credits = graded.reduce((acc, curr) => acc + Number(curr.credits), 0);
+        return credits > 0 ? (weighted / credits) : 0;
+      };
+
+      const avg1 = calcAverage(s1Grades);
+      const avg2 = calcAverage(s2Grades);
+
+      const bursa_s1 = avg1 >= 9.50 ? "Merit" : "Fara bursa";
+      const bursa_s2 = avg2 >= 9.50 ? "Merit" : "Fara bursa";
+
       await updateDoc(studentRef, {
         Nume: selectedStudent.Nume,
         Prenume: selectedStudent.Prenume,
         CNP: selectedStudent.CNP,
         Specializare: selectedStudent.Specializare,
-        bursa_s1: selectedStudent.bursa_s1,
-        bursa_s2: selectedStudent.bursa_s2,
+        bursa_s1: bursa_s1,
+        bursa_s2: bursa_s2,
         varsta: selectedStudent.varsta || "",
         sex: selectedStudent.sex || "M",
         telefon: selectedStudent.telefon || "",
@@ -106,11 +135,17 @@ const AdminPage = () => {
 
       const promises = allGrades.map(g => {
         const gRef = doc(db, `student/${selectedStudent.id}/grades`, g.id);
-        return setDoc(gRef, { ...g });
+        return setDoc(gRef, {
+          code: g.code || "COD",
+          subject: g.subject || "Materie",
+          credits: Number(g.credits) || 0,
+          grade: Number(g.grade) || 0,
+          semester: Number(g.semester) || 1
+        });
       });
       await Promise.all(promises);
 
-      notify("Modificările au fost salvate în Cloud cu succes!");
+      notify(`Modificările au fost salvate! (Bursă S1: ${bursa_s1}, Bursă S2: ${bursa_s2})`);
       fetchStudents();
       if (activeTab === "grades_tab") setShowDetailsModal(false);
     } catch (err) {
@@ -127,9 +162,25 @@ const AdminPage = () => {
         setSelectedStudent(null);
         fetchStudents();
       } catch (err) {
+        console.error(err);
         notify("Eroare la ștergere.", "error");
       }
     }
+  };
+
+  const getModalStats = (semester) => {
+    const list = semester 
+      ? allGrades.filter(g => Number(g.semester) === semester)
+      : allGrades;
+    const totalCredits = list.reduce((acc, curr) => acc + (Number(curr.credits) || 0), 0);
+    const graded = list.filter(curr => Number(curr.grade) > 0);
+    if (graded.length === 0) return { avg: "0.00", credits: totalCredits };
+    const weighted = graded.reduce((acc, curr) => acc + (Number(curr.grade) * Number(curr.credits)), 0);
+    const gradedCredits = graded.reduce((acc, curr) => acc + Number(curr.credits), 0);
+    return {
+      avg: gradedCredits > 0 ? (weighted / gradedCredits).toFixed(2) : "0.00",
+      credits: totalCredits
+    };
   };
 
   const handleAddSubject = (semester) => {
@@ -162,19 +213,21 @@ const AdminPage = () => {
     const secondaryAuth = getAuth(secondaryApp);
 
     try {
-      const email = `${newStudent.CNP}@student.uoradea.ro`;
+      const cleanCNP = newStudent.CNP.trim();
+      const cleanPassword = newStudent.password.trim();
+      const email = `${cleanCNP}@student.uoradea.ro`;
       
-      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, newStudent.password);
+      const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, cleanPassword);
       const uid = userCredential.user.uid;
 
       await setDoc(doc(db, "student", uid), {
-        Nume: newStudent.Nume,
-        Prenume: newStudent.Prenume,
-        CNP: newStudent.CNP,
+        Nume: newStudent.Nume.trim(),
+        Prenume: newStudent.Prenume.trim(),
+        CNP: cleanCNP,
         Specializare: newStudent.Specializare,
         email: email,
-        bursa_s1: newStudent.bursa_s1,
-        bursa_s2: newStudent.bursa_s2,
+        bursa_s1: newStudent.bursa_s1 || "Fara bursa",
+        bursa_s2: newStudent.bursa_s2 || "Fara bursa",
         varsta: newStudent.varsta || "",
         sex: newStudent.sex || "M",
         telefon: newStudent.telefon || "",
@@ -184,18 +237,43 @@ const AdminPage = () => {
         statusTaxa: newStudent.statusTaxa || "Asteptare"
       });
 
-      // 📚 STICT SPECIALIZATION SUBJECTS
-      const gradesTemplatesSnap = await getDocs(collection(db, "grades"));
-      const templates = gradesTemplatesSnap.docs.map(doc => doc.data());
-      const filteredTemplates = templates.filter(t => t.specializare === newStudent.Specializare);
-
-      if (filteredTemplates.length === 0) {
-        notify(`Atenție: Nu există materii predefinite pentru specializarea ${newStudent.Specializare}. Catalogul va fi gol.`, "error");
+      // 📚 STICT SPECIALIZATION SUBJECTS (cu fallback default)
+      let templates = [];
+      try {
+        const gradesTemplatesSnap = await getDocs(collection(db, "grades"));
+        const rawTemplates = gradesTemplatesSnap.docs.map(doc => doc.data());
+        templates = rawTemplates.filter(t => t.specializare === newStudent.Specializare);
+      } catch (err) {
+        console.warn("Could not load templates:", err);
       }
 
-      const creationPromises = filteredTemplates.map(t => {
+      if (templates.length === 0) {
+        templates = newStudent.Specializare === "TI" ? [
+          { subject: "Programare Web", code: "TI101", credits: 5, semester: 1 },
+          { subject: "Structuri de Date", code: "TI102", credits: 5, semester: 1 },
+          { subject: "Arhitectura Calculatoarelor", code: "TI103", credits: 5, semester: 1 },
+          { subject: "Baze de Date", code: "TI201", credits: 5, semester: 2 },
+          { subject: "Retele de Calculatoare", code: "TI202", credits: 5, semester: 2 },
+          { subject: "Inginerie Software", code: "TI203", credits: 5, semester: 2 }
+        ] : [
+          { subject: "Calculatoare Default I", code: "CALC", credits: 5, semester: 1 },
+          { subject: "POO", code: "POO", credits: 4, semester: 1 },
+          { subject: "IS2", code: "IS2", credits: 5, semester: 1 },
+          { subject: "Calculatoare Default II", code: "CALC", credits: 5, semester: 2 },
+          { subject: "EV", code: "EV", credits: 3, semester: 2 },
+          { subject: "OOP", code: "OOP", credits: 4, semester: 2 }
+        ];
+      }
+
+      const creationPromises = templates.map(t => {
         const gRef = doc(collection(db, `student/${uid}/grades`));
-        return setDoc(gRef, { subject: t.subject, grade: 0, credits: t.credits || 5, semester: t.semester || 1, code: t.code || "TPL" });
+        return setDoc(gRef, { 
+          subject: t.subject, 
+          grade: 0, 
+          credits: Number(t.credits) || 5, 
+          semester: Number(t.semester) || 1, 
+          code: t.code || "COD" 
+        });
       });
       await Promise.all(creationPromises);
 
@@ -511,6 +589,22 @@ const AdminPage = () => {
                  <button onClick={() => setShowDetailsModal(false)} className="p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><X size={24} /></button>
               </div>
 
+               {/* BARA MEDII LIVE */}
+               <div className="grid grid-cols-3 gap-4 px-8 py-4 bg-blue-50/40 border-b border-gray-100 text-center">
+                  <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Medie Sem. 1</p>
+                     <p className="text-xl font-black text-blue-600">{getModalStats(1).avg} <span className="text-xs text-gray-400 font-normal">({getModalStats(1).credits} cr.)</span></p>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Medie Sem. 2</p>
+                     <p className="text-xl font-black text-blue-600">{getModalStats(2).avg} <span className="text-xs text-gray-400 font-normal">({getModalStats(2).credits} cr.)</span></p>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                     <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Medie Anuală</p>
+                     <p className="text-xl font-black text-[#001f3f]">{getModalStats().avg} <span className="text-xs text-gray-400 font-normal">({getModalStats().credits} / 60 cr.)</span></p>
+                  </div>
+               </div>
+
               <div className="flex-grow overflow-y-auto p-10 custom-scrollbar">
                  {[1, 2].map(sem => (
                     <div key={sem} className="mb-12 last:mb-0">
@@ -520,7 +614,7 @@ const AdminPage = () => {
                        </div>
                        
                        <div className="grid grid-cols-1 gap-4">
-                          {allGrades.filter(g => g.semester === sem).map(grade => (
+                          {allGrades.filter(g => Number(g.semester) === sem).map(grade => (
                              <div key={grade.id} className="p-6 bg-gray-50 rounded-2xl flex items-center gap-8 border border-transparent hover:bg-white hover:border-gray-100 hover:shadow-xl transition-all duration-300 group">
                                 <div className="flex-grow">
                                    <input className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-transparent outline-none mb-1 w-full" value={grade.code} placeholder="COD" onChange={e => setAllGrades(allGrades.map(g => g.id === grade.id ? {...g, code: e.target.value} : g))} />
@@ -529,11 +623,11 @@ const AdminPage = () => {
                                 <div className="flex items-center gap-6">
                                    <div className="text-center">
                                       <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Credite</p>
-                                      <input type="number" className="w-10 h-10 bg-white rounded-lg border border-gray-100 text-center font-bold text-sm outline-none" value={grade.credits} onChange={e => setAllGrades(allGrades.map(g => g.id === grade.id ? {...g, credits: e.target.value} : g))} />
+                                      <input type="number" className="w-10 h-10 bg-white rounded-lg border border-gray-100 text-center font-bold text-sm outline-none" value={grade.credits} onChange={e => setAllGrades(allGrades.map(g => g.id === grade.id ? {...g, credits: e.target.value === "" ? 0 : Number(e.target.value)} : g))} />
                                    </div>
                                    <div className="text-center">
                                       <p className="text-[9px] font-bold text-blue-400 uppercase mb-1">Notă</p>
-                                      <input type="number" className="w-12 h-12 bg-blue-600 rounded-xl text-white text-center font-bold text-xl outline-none shadow-lg group-hover:scale-105 transition-transform" value={grade.grade} onChange={e => setAllGrades(allGrades.map(g => g.id === grade.id ? {...g, grade: e.target.value} : g))} />
+                                      <input type="number" className="w-12 h-12 bg-blue-600 rounded-xl text-white text-center font-bold text-xl outline-none shadow-lg group-hover:scale-105 transition-transform" value={grade.grade} onChange={e => setAllGrades(allGrades.map(g => g.id === grade.id ? {...g, grade: e.target.value === "" ? 0 : Number(e.target.value)} : g))} />
                                    </div>
                                    <button onClick={() => handleDeleteGrade(grade)} className="p-2 text-gray-200 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"><Trash2 size={20} /></button>
                                 </div>

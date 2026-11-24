@@ -18,7 +18,7 @@ import {
 const HomePage = ({ searchQuery }) => {
 const articles = [
     {
-      t: "Bursele de Merit 2024: Aplicațiile sunt acum deschise",
+      t: "Bursele de Merit 2026: Aplicațiile sunt acum deschise",
       tag: "Admiteri",
     },
     {
@@ -183,7 +183,7 @@ const articles = [
               {
                 i: Calendar,
                 t: "Modificare Contracte",
-                d: "Sept 12, 2024",
+                d: "Sept 12, 2026",
                 sub: "Ultima zi pentru modificarea disciplinelor.",
                 col: "text-red-500",
                 bg: "bg-red-50",
@@ -207,7 +207,7 @@ const articles = [
               {
                 i: Star,
                 t: "Grant Cercetare",
-                d: "Nov 05, 2024",
+                d: "Nov 05, 2026",
                 sub: "Trimiterea aplicațiilor pentru bursa de cercetare.",
                 col: "text-orange-500",
                 bg: "bg-orange-50",

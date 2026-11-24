@@ -10,7 +10,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { db, auth } from "./firebase";
-import { collection, query, where, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, query, getDocs, doc, getDoc, updateDoc } from "firebase/firestore";
 import stampilaImg from "./assets/stampila.jpeg";
 
 const CatalogPage = () => {
@@ -19,23 +19,27 @@ const CatalogPage = () => {
   const [studentStatusS1, setStudentStatusS1] = useState();
   const [studentStatusS2, setStudentStatusS2] = useState();
 
-  const updateBursa = async (semester, avg) => {
-  const user = auth.currentUser;
-  if (!user) return;
+  const updateBursa = async (semester, avg, currentStatus) => {
+    const user = auth.currentUser;
+    if (!user) return;
 
-  const userDocRef = doc(db, "student", user.uid);
+    const numAvg = parseFloat(avg);
+    // Dacă media este sub 9.50 nu are bursă; dacă e >= 9.50 primește bursă de Merit
+    const newStatus = numAvg >= 9.50 ? "Merit" : "Fara bursa";
+    if (currentStatus !== newStatus) {
+      try {
+        const userDocRef = doc(db, "student", user.uid);
+        await updateDoc(userDocRef, {
+          [semester === 1 ? "bursa_s1" : "bursa_s2"]: newStatus
+        });
+        if (semester === 1) setStudentStatusS1(newStatus);
+        else setStudentStatusS2(newStatus);
+      } catch (e) {
+        console.error("Eroare update bursa:", e);
+      }
+    }
+  };
 
-  if (avg >= 9.5) {
-    // dacă media >= 9.5, setează bursă de merit
-    await updateDoc(userDocRef, {
-      [semester === 1 ? "bursa_s1" : "bursa_s2"]: "Bursa auto"
-    });
-
-    // actualizează și starea locală
-    if (semester === 1) setStudentStatusS1("Bursa auto");
-    else setStudentStatusS2("Bursa auto");
-  }
-};
   useEffect(() => {
     const fetchGrades = async () => {
       try {
@@ -43,44 +47,47 @@ const CatalogPage = () => {
         if (user) {
           const uid = user.uid;
 
-          // 1. Obținem datele despre Bursă din colecția 'users'
+          let curS1 = "Fara bursa";
+          let curS2 = "Fara bursa";
+
+          // 1. Obținem datele despre Bursă din colecția 'student'
           const userDocRef = doc(db, "student", uid);
           const userDocSnap = await getDoc(userDocRef);
           
           if (userDocSnap.exists()) {
-            setStudentStatusS1(userDocSnap.data().bursa_s1 || "Fara Bursa");
-            setStudentStatusS2(userDocSnap.data().bursa_s2 || "Fara Bursa");
+            curS1 = userDocSnap.data().bursa_s1 || "Fara bursa";
+            curS2 = userDocSnap.data().bursa_s2 || "Fara bursa";
+            setStudentStatusS1(curS1);
+            setStudentStatusS2(curS2);
           }
+
           const q = query(
-             collection(db, "student", uid, "grades")
-           );
+            collection(db, "student", uid, "grades")
+          );
           const querySnapshot = await getDocs(q);
           
-          // Mapăm datele din Firebase (subject, grade, etc.) 
-          // să se potrivească cu literele tale din tabel (n, g, etc.)
           const data = querySnapshot.docs.map(doc => {
             const item = doc.data();
             return {
+              id: doc.id,
               c: item.code || "N/A",      // Cod materie
               n: item.subject || "N/A",   // Nume materie
-              cr: item.credits || 0,      // Credite
-              g: item.grade || 0,         // Notă
-              semester: item.semester, 
-              studentId: item.studentId    // Semestru
+              cr: Number(item.credits) || 0, // Credite ca număr garantat
+              g: Number(item.grade) || 0,    // Notă ca număr garantat
+              semester: Number(item.semester) || 1, 
+              studentId: item.studentId
             };
           });
           setGrades(data);
           
           const s1 = data.filter(g => g.semester === 1);
-const s2 = data.filter(g => g.semester === 2);
+          const s2 = data.filter(g => g.semester === 2);
 
-const statsS1 = calculateStats(s1);
-const statsS2 = calculateStats(s2);
+          const statsS1 = calculateStats(s1);
+          const statsS2 = calculateStats(s2);
 
-// verificăm dacă studentul merită bursă
-updateBursa(1, parseFloat(statsS1.avg));
-updateBursa(2, parseFloat(statsS2.avg));
-
+          updateBursa(1, statsS1.avg, curS1);
+          updateBursa(2, statsS2.avg, curS2);
         }
       } catch (error) {
         console.error("Eroare la încărcare:", error);
@@ -164,21 +171,30 @@ const handleDownloadPDF = async () => {
 
   doc.save(`FisaMatricola_${user.uid}.pdf`);
 };
-    const calculateStats = (subjects) => {
-    if (subjects.length === 0) return { avg: "0.00", credits: 0 };
-    const totalWeighted = subjects.reduce((acc, curr) => acc + (curr.g * curr.cr), 0);
-    const totalCredits = subjects.reduce((acc, curr) => acc + curr.cr, 0);
+  const calculateStats = (subjects) => {
+    if (!subjects || subjects.length === 0) return { avg: "0.00", credits: 0 };
+    
+    // Total credite numeric
+    const totalCredits = subjects.reduce((acc, curr) => acc + (Number(curr.cr) || 0), 0);
+    
+    // Doar materiile care au notă validă (> 0)
+    const graded = subjects.filter(curr => Number(curr.g) > 0);
+    if (graded.length === 0) {
+      return { avg: "0.00", credits: totalCredits };
+    }
+    
+    const totalWeighted = graded.reduce((acc, curr) => acc + ((Number(curr.g) || 0) * (Number(curr.cr) || 0)), 0);
+    const gradedCredits = graded.reduce((acc, curr) => acc + (Number(curr.cr) || 0), 0);
+    
     return {
-      avg: totalCredits > 0 ? (totalWeighted / totalCredits).toFixed(2) : "0.00",
+      avg: gradedCredits > 0 ? (totalWeighted / gradedCredits).toFixed(2) : "0.00",
       credits: totalCredits
     };
   };
+
   const s1 = grades.filter(g => g.semester === 1);
   const s2 = grades.filter(g => g.semester === 2);
   const annualStats = calculateStats(grades);  
-
-
-
 
   if (loading) {
     return (
@@ -188,17 +204,13 @@ const handleDownloadPDF = async () => {
     );
   }
 
-
-
   return (
     <div className="min-h-screen bg-[#f8f9fa] text-[#001f3f] font-sans pb-20">
-      
-
       <main className="max-w-7xl mx-auto px-8 py-12">
         <h1 className="text-4xl font-bold tracking-tight mb-2">Situație Academică</h1>
         <p className="text-gray-400 font-medium text-lg mb-10">Catalog detaliat al notelor pentru studentul logat.</p>
 
-<div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-20">
           <div className="bg-[#001f3f] p-10 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
             <p className="text-[10px] font-black uppercase tracking-[0.25em] opacity-60 mb-8">
               Media Generală Anuală
@@ -240,65 +252,64 @@ const handleDownloadPDF = async () => {
               <TrendingUp size={28} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-2">Status Bursa
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4">
+                Status Bursă
               </p>
-              <h3 className="text-5xl font-bold text-[#001f3f] italic">
-      <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between bg-orange-50/40 px-4 py-3 rounded-2xl border border-orange-100/50">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-orange-400"></div>
-          <span className="text-[12px] font-black uppercase text-gray-400">Semestrul 1:</span>
-        </div>
-        <span className="text-lg font-black text-[#001f3f]">{studentStatusS1 }</span>
-      </div>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between bg-orange-50/40 px-4 py-3 rounded-2xl border border-orange-100/50">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-orange-400"></div>
+                    <span className="text-[12px] font-black uppercase text-gray-400">Semestrul 1:</span>
+                  </div>
+                  <span className="text-base font-black text-[#001f3f]">
+                    {parseFloat(calculateStats(s1).avg) >= 9.50 ? "Merit" : "Fara bursa"}
+                  </span>
+                </div>
 
-      <div className="flex items-center justify-between bg-orange-50/40 px-4 py-3 rounded-2xl border border-orange-100/50">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-          <span className="text-[12px] font-black uppercase text-gray-400">Semestrul 2:</span>
-        </div>
-        <span className="text-lg font-black text-[#001f3f]">{studentStatusS2}</span>
-      </div>
-      
-    </div>
-        </h3>
+                <div className="flex items-center justify-between bg-orange-50/40 px-4 py-3 rounded-2xl border border-orange-100/50">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                    <span className="text-[12px] font-black uppercase text-gray-400">Semestrul 2:</span>
+                  </div>
+                  <span className="text-base font-black text-[#001f3f]">
+                    {parseFloat(calculateStats(s2).avg) >= 9.50 ? "Merit" : "Fara bursa"}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-
-
-
         {/* TABELE SEMESTRE */}
         <div className="space-y-24">
-          <SemesterTable title="Semestrul 1" badge="TOAMNĂ 2025" stats={calculateStats(s1)} courses={s1} />
+          <SemesterTable title="Semestrul 1" badge="TOAMNĂ 2026" stats={calculateStats(s1)} courses={s1} />
           <SemesterTable title="Semestrul 2" badge="PRIMĂVARĂ 2026" stats={calculateStats(s2)} courses={s2} />
         </div>
-       <div className="mt-24 flex justify-center">
-  <div className="bg-[#f1f3f5] p-12 rounded-[3rem] border border-gray-200 flex flex-col lg:flex-row items-center justify-center gap-10">
-    <div className="max-w-xl text-center">
-      <h3 className="text-2xl font-bold mb-3 text-[#001f3f]">
-        Solicitare Foaie Matricolă?
-      </h3>
-      <p className="text-gray-500 text-base font-medium leading-relaxed">
-        Documentele semnate digital sunt disponibile imediat în format PDF.
-      </p>
-    </div>
-    <button
-  onClick={handleDownloadPDF}
-  className="bg-[#001f3f] text-white px-10 py-5 rounded-2xl font-bold text-sm flex items-center gap-3 shadow-xl hover:bg-blue-900 transition-all"
->
-  <Download size={20} /> Descarcă PDF
-</button>
-  </div>
-</div>
+        <div className="mt-24 flex justify-center">
+          <div className="bg-[#f1f3f5] p-12 rounded-[3rem] border border-gray-200 flex flex-col lg:flex-row items-center justify-center gap-10">
+            <div className="max-w-xl text-center">
+              <h3 className="text-2xl font-bold mb-3 text-[#001f3f]">
+                Solicitare Foaie Matricolă?
+              </h3>
+              <p className="text-gray-500 text-base font-medium leading-relaxed">
+                Documentele semnate digital sunt disponibile imediat în format PDF.
+              </p>
+            </div>
+            <button
+              onClick={handleDownloadPDF}
+              className="bg-[#001f3f] text-white px-10 py-5 rounded-2xl font-bold text-sm flex items-center gap-3 shadow-xl hover:bg-blue-900 transition-all"
+            >
+              <Download size={20} /> Descarcă PDF
+            </button>
+          </div>
+        </div>
       </main>
     </div>
   );
 };
 
-// Tabelul rămâne la fel ca cel original pe care l-ai trimis
-const SemesterTable = ({ title, badge, stats ,courses }) => (
+// Tabelul de materii
+const SemesterTable = ({ title, badge, stats, courses }) => (
   <section>
     <div className="flex justify-between items-end mb-10 px-4">
       <div>
@@ -306,7 +317,7 @@ const SemesterTable = ({ title, badge, stats ,courses }) => (
         <h2 className="text-4xl font-bold text-[#001f3f] tracking-tight">{title}</h2>
       </div>
       <div className="text-right">
-        <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1"> Medie Semestru</p>
+        <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest mb-1">Medie Semestru</p>
         <p className="text-3xl font-black text-blue-600">{stats.avg}</p>
       </div>
     </div>
@@ -326,8 +337,8 @@ const SemesterTable = ({ title, badge, stats ,courses }) => (
               <tr key={i} className="group hover:bg-blue-50/30 transition-all">
                 <td className="px-10 py-7 text-[13px] font-bold text-gray-400 uppercase tracking-widest">{c.c}</td>
                 <td className="px-10 py-7 text-[15px] font-bold text-[#001f3f]">{c.n}</td>
-                <td className="px-10 py-7 text-sm font-bold text-gray-500 text-center">{c.cr}.0</td>
-                <td className="px-10 py-7 text-right font-black text-blue-600">{c.g}</td>
+                <td className="px-10 py-7 text-sm font-bold text-gray-500 text-center">{c.cr}</td>
+                <td className="px-10 py-7 text-right font-black text-blue-600">{c.g > 0 ? c.g : "-"}</td>
               </tr>
             ))
           ) : (

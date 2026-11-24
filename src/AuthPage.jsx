@@ -15,11 +15,12 @@ const [password, setPassword] = useState("");
 const handleSubmit = async (e) => {
   e.preventDefault();
   
-  
-  const fakeEmail = `${cnp}@student.uoradea.ro`;
+  const cleanCnp = cnp.trim();
+  const cleanPassword = password.trim();
+  const fakeEmail = `${cleanCnp}@student.uoradea.ro`;
 
   try {
-    await signInWithEmailAndPassword(auth, fakeEmail, password);
+    await signInWithEmailAndPassword(auth, fakeEmail, cleanPassword);
     navigate("/home");
   } catch (error) {
     showAlert("CNP sau Parolă incorectă!", "error" );
